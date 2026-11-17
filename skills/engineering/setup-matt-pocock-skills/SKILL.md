@@ -1,120 +1,60 @@
 ---
 name: setup-matt-pocock-skills
-description: "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills."
+description: "Bind this repository to Opran for the engineering skills: write the `<!-- opran:begin -->` block in AGENTS.md naming its Opran project, repository, default branch, gate and conventions. Run once per repository, and again to refresh the block."
 disable-model-invocation: true
 ---
 
-# Setup Matt Pocock's Skills
+# Set up the skills for Opran
 
-Scaffold the per-repo configuration that the engineering skills assume:
+The engineering skills read the issue tracker, the triage labels and the domain docs from the repository's context. In this fork that context is **Opran**: the project's issues and merge requests through the `opran` MCP server, and the team's conventions in the wiki pages of the conventions project the project imports (`CONV`). The repository itself holds only one block in `AGENTS.md`, between `<!-- opran:begin -->` and `<!-- opran:end -->`. This skill writes that block. It writes no `docs/agents/*.md`: what those held lives in the conventions project's pages.
 
-- **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
-- **Triage labels**: the strings used for the five canonical triage roles
-- **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
-
-This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
+This is a prompt-driven skill, not a script. Explore, show the user the block, confirm, then write.
 
 ## Process
 
 ### 1. Explore
 
-Look at the current repo to understand its starting state. Read whatever exists; don't assume:
+Read what exists; don't assume:
 
-- `git remote -v` and `.git/config`: is this a GitHub repo? Which one?
-- `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
-- `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, and the legacy `CONTEXT.md` / `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its `GLOSSARY` name and rewrite those names in `docs/agents/domain.md`.
-- `docs/adr/` and any `src/*/docs/adr/` directories
-- `docs/agents/`: does this skill's prior output already exist?
-- `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
-- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
-- Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
+- **The repository:** `git remote -v`. The Opran repository is the remote whose URL is `https://<install>/<KEY>/<name>.git`; its handle is `<KEY>/<name>`. With no such remote, ask the user for the repository's handle.
+- **The project:** call `get_project` with `<KEY>` through the `opran` MCP server. It gives the repository's default branch (`repositories[].defaultBranch`), the projects it imports (`imports`), and its agent instructions, each entry naming its project. The conventions project is the one it imports whose entry tells how the team works (normally `CONV`); if it imports several, or none, or the repository is in the conventions project itself, ask the user which. If the `opran` server isn't connected, stop and tell the user to add it to `.mcp.json` and enable it, then run this skill again.
+- **The gate and the queue:** whether `.opran/gate.yaml` exists on the default branch's tip in Opran (`git fetch origin`, then `git cat-file -e origin/<branch>:.opran/gate.yaml`), and whether a protection of the repository has the merge queue on (`get_project`'s `protections[].mergeQueue`). The block names both either way, as the queue's gate reads that file; when either is missing, say so in step 2.
+- **The files:** `AGENTS.md` and `CLAUDE.md` at the root, and whether either already holds the block (its two marker lines). Also note an older `## Agent skills` section without markers, and `docs/agents/`: they are upstream's setup, which the block replaces.
 
-### 2. Present findings and ask
+### 2. Show the block and confirm
 
-Summarise what's present and what's missing. Then take the sections in order. One section, one answer, then the next.
+Show the user the block, filled in from what you found, and where it goes (step 3). Let them correct the key, the repository, the default branch or the conventions project before writing. A default branch other than the one `get_project` gives is a mismatch to name: the block should say the branch Opran has, unless the user is changing it there too.
 
-Lead each section with the recommended answer so the user can accept it in a word. Give a one-line explainer only when the choice genuinely branches; skip the section entirely when exploration already settled it (Section B when `triage` isn't installed, Section C when there's no monorepo).
-
-**Section A: Issue tracker.**
-
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it. They need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
-
-Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
-
-- **GitHub**: issues live in the repo's GitHub Issues (uses the `gh` CLI)
-- **GitLab**: issues live in the repo's GitLab Issues (uses the [`glab`](https://gitlab.com/gitlab-org/cli) CLI)
-- **Local markdown**: issues live as files under `.scratch/<feature>/` in this repo (good for solo projects or repos without a remote)
-- **Other** (Jira, Linear, etc.): ask the user to describe the workflow in one paragraph; the skill will record it as freeform prose
-
-Record the choice in `docs/agents/issue-tracker.md`. The GitHub and GitLab templates carry a "PRs as a request surface" flag, defaulted **off**. Leave it off and don't raise it: a user who wants external PRs in the triage queue can flip the flag in the file later.
-
-A GitHub or GitLab tracker needs a reachable repo. When the user picks one and no `git remote` points at that host, get the repo URL from them and wire it up (`git init` if needed, `git remote add origin <url>`) before going further. Done when `gh repo view` / `glab repo view` prints the project from inside this directory; if it can't, stop and tell the user what's missing.
-
-**Section B: Triage label vocabulary.** Skip this section entirely if the `triage` skill isn't installed (exploration told you), since an uninstalled skill needs no labels.
-
-If it is installed, ask exactly one question:
-
-> Do you want to keep the default triage labels? (recommended: **yes**)
-
-The defaults are the five canonical roles, each label string equal to its name: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. On **yes**, write them as-is. Only if the user says no, usually because their tracker already uses other names (e.g. `bug:triage` for `needs-triage`), collect the overrides so `triage` applies existing labels instead of creating duplicates.
-
-**Section C: Domain docs.** Default to **single-context** (one `GLOSSARY.md` + `docs/adr/` at the repo root). This fits almost every repo; write it without asking.
-
-Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
-
-### 3. Confirm and edit
-
-Show the user a draft of:
-
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
-- The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
-
-Let them edit before writing.
-
-### 4. Write
-
-**Pick the file to edit:**
-
-- If `CLAUDE.md` exists, edit it.
-- Else if `AGENTS.md` exists, edit it.
-- If neither exists, ask the user which one to create; don't pick for them.
-
-Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa); always edit the one that's already there.
-
-If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
-
-The block:
+The block, exactly (the same text Opran's onboarding writes in its setup merge request, so either can rewrite the other's; its apostrophes are the typographic `’`, copy them as they are):
 
 ```markdown
+<!-- opran:begin -->
 ## Agent skills
 
-### Issue tracker
+This repository is `<KEY>/<name>`, of the Opran project `<KEY>`; its default branch is `<branch>`.
 
-[one-line summary of where issues are tracked]. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-[one-line summary of the label vocabulary]. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-[one-line summary of layout: "single-context" or "multi-context"]. See `docs/agents/domain.md`.
+- The gate’s steps are in `.opran/gate.yaml`.
+- The conventions: call `get_project`, then read `<CONV>`’s pages for the parts that apply.
+- Work reaches `<branch>` only by merge request, through the merge queue, as `<CONV>`’s Merge requests page describes.
+<!-- opran:end -->
 ```
 
-Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.
+### 3. Write
 
-When Section B ran on GitHub or GitLab, create each configured label the tracker lacks (`gh label create` / `glab label create`).
+**The file:** `AGENTS.md`. Put the block in `CLAUDE.md` only when there is no `AGENTS.md`; otherwise leave `CLAUDE.md` alone. With neither file, create `AGENTS.md`.
 
-Then write the docs files using the seed templates in this skill folder as a starting point:
+**Where in it:**
 
-- [issue-tracker-github.md](./issue-tracker-github.md): GitHub issue tracker
-- [issue-tracker-gitlab.md](./issue-tracker-gitlab.md): GitLab issue tracker
-- [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
-- [triage-labels.md](./triage-labels.md): label mapping (only if `triage` is installed)
-- [domain.md](./domain.md): domain doc consumer rules + layout
+- A marker counts only as a line of its own (indented by at most three spaces, spaces or tabs after it allowed), outside fenced code: a fence opens with three or more backticks or tildes (a backtick line whose rest holds a backtick opens none) and closes with the same character, at least as many, and nothing but spaces or tabs after them. A marker in a fence, in inline code or within a sentence is text, not a marker.
+- The file has the block: replace everything from its begin line to its end line, both included, with the new block. Leave everything around it as written.
+- The file has no block: add it at the end, after the file's text with its trailing whitespace dropped and one blank line, the block ending in a line ending. The block is the file's whole text when the file is new, empty or holds only whitespace.
+- The file begins the block more than once, or has a begin with no end (or an end with no begin): write nothing. Tell the user which lines, and let them settle it first.
+- Keep the file's line endings (CRLF if it uses them), as git stores the file: write in the checkout's working copy, and let git's own line-ending settings do what they do on commit.
 
-For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+Running the skill again rewrites the block in place; when it already says the same, change nothing.
 
-### 5. Done
+**Upstream's setup:** an older `## Agent skills` section that no markers enclose (the block's own heading is inside them), and `docs/agents/*.md`, are what upstream's setup wrote. Leave them while the project still uses them; offer to remove them once its conventions project's pages carry what they said. Never remove them without the user's yes.
 
-Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later; re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+### 4. Done
+
+Tell the user the block is written and where, that the skills now find the tracker through `get_project` and the conventions project's pages, and that the change reaches the default branch by merge request like any other.
