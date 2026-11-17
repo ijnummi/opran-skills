@@ -22,7 +22,15 @@ Everything else Opran-specific (claims, `## Decisions` comments, handles) is in 
 }
 ```
 
-then, once per clone (worktrees share it) and once per agent's own config folder, with the folder trusted: `claude plugin install opran-skills@opran --scope project`.
+then, once per clone (worktrees share it) and once per agent's own config folder, with the folder trusted:
+
+```bash
+claude plugin marketplace add <this mirror's owner/name>
+claude plugin install opran-skills@opran --scope project
+git checkout .claude/settings.json
+```
+
+The install doesn't add the marketplace `extraKnownMarketplaces` declares (without the first line it answers that `opran-skills` isn't in the marketplace), and it rewrites `.claude/settings.json` in its own order and layout, which the last line puts back.
 
 **Versions** are `<upstream's version>-opran.<n>`, in `package.json` and `.claude-plugin/plugin.json` (`node scripts/sync-plugin-version.mjs` copies the first into the second), raised on each release of the fork.
 
