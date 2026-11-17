@@ -1,6 +1,6 @@
 ---
 name: pr
-description: "Use when writing a PR body."
+description: "Use when writing a merge request's description."
 metadata:
   credits:
     skill: show-me
@@ -9,7 +9,7 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Use this template for writing the PR body:
+Use this template for writing a merge request's description (the `description` of `create_merge_request`, or `edit` on the merge request later, through the `opran` MCP server):
 
 ```markdown
 ## Summary
@@ -165,6 +165,6 @@ Execution-based evidence is A-tier. Test results, console output. Show the exact
 
 ### Merge Danger
 
-Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
+Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A merge request that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
 
-The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+The blast radius is the potential impact or scope of the changes introduced by this merge request. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.

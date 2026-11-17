@@ -1,5 +1,5 @@
 interface:
-  display_name: "Setup Matt Pocock Skills"
-  short_description: "Configure a repo for the skills"
+  display_name: "Set up the skills for Opran"
+  short_description: "Bind a repo to Opran for the skills"
 policy:
   allow_implicit_invocation: false

@@ -1,13 +1,13 @@
 {
-  "name": "mattpocock",
+  "name": "opran",
   "owner": {
     "name": "Matt Pocock",
     "url": "https://www.aihero.dev"
   },
-  "description": "Matt Pocock's skills for real engineering, as an installable Claude Code plugin.",
+  "description": "opran-skills: Matt Pocock's skills, forked for working in Opran (the issue tracker and merge requests through the opran MCP server).",
   "plugins": [
     {
-      "name": "mattpocock-skills",
+      "name": "opran-skills",
       "source": "./",
       "description": "Matt Pocock's agent skills for real engineering (grilling, spec/ticket flows, TDD, code review, domain modelling and more).",
       "category": "engineering",
