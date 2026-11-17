@@ -1,3 +1,37 @@
+# opran-skills
+
+This is **opran-skills**, a fork of Matt Pocock's [skills](https://github.com/mattpocock/skills) for working in Opran: the issue tracker and merge requests through the `opran` MCP server, and the team's conventions in the wiki pages of the conventions project `CONV`. Its home is the repository `CONV/skills` in Opran; this GitHub repository is its push mirror, from which checkouts install it. All credit for the skills goes to Matt Pocock and their contributors; the fork is MIT licensed as upstream is (see [License](#license) below).
+
+**What the fork changes,** and nothing more:
+
+- **The binding:** the skills find the tracker through `get_project` and the conventions project's pages. The setup skill (`setup-matt-pocock-skills`) writes one block in the repository's `AGENTS.md`, between `<!-- opran:begin -->` and `<!-- opran:end -->`, and no `docs/agents/*.md`.
+- **Merge requests, not pull requests:** `pr`, `code-review`'s spec lookup, `wayfinder`'s research branches and `implement-spec`'s integration branch speak of merge requests through the `opran` MCP server.
+- **`implement-spec` runs one test-running subagent at a time.**
+- **The names:** the marketplace `opran`, the plugin `opran-skills`.
+
+Everything else Opran-specific (claims, `## Decisions` comments, handles) is in the conventions project's pages, not here.
+
+**Installing,** in a checkout's committed `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "opran": { "source": { "source": "github", "repo": "<this mirror's owner/name>" }, "autoUpdate": true }
+  },
+  "enabledPlugins": { "opran-skills@opran": true }
+}
+```
+
+then, once per clone (worktrees share it) and once per agent's own config folder, with the folder trusted: `claude plugin install opran-skills@opran --scope project`.
+
+**Versions** are `<upstream's version>-opran.<n>`, in `package.json` and `.claude-plugin/plugin.json` (`node scripts/sync-plugin-version.mjs` copies the first into the second), raised on each release of the fork.
+
+**Taking in upstream's next tag:** the `upstream` branch follows `mattpocock/skills`. When upstream tags a release, move `upstream` to that tag, then open a merge request in `CONV/skills` from `upstream` into `main`, resolving the conflicts there and keeping the changes above. Once the owner has merged it, set the version to `<the new tag>-opran.1` by another merge request. Sessions do this only when the owner asks.
+
+The rest of this README is upstream's, as written.
+
+---
+
 <p>
   <a href="https://www.aihero.dev/s/skills-newsletter">
     <picture>
@@ -256,3 +290,31 @@ General workflow tools, not code-specific.
 
 - **[grilling](./skills/productivity/grilling/SKILL.md)**: Interview the user relentlessly about a plan, decision, or idea until every branch of the design tree is resolved. The reusable interview primitive behind `grill-me`, `grill-with-docs`, `triage`, `wayfinder` and `improve-codebase-architecture`.
 - **[writing-for-agents](./skills/productivity/writing-for-agents/SKILL.md)**: Writing documents for agents: skills, AGENTS.md/CLAUDE.md, and any doc an agent reaches by a pointer.
+
+## License
+
+The fork keeps upstream's licence, in [LICENSE](./LICENSE):
+
+```text
+MIT License
+
+Copyright (c) 2026 Matt Pocock
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
